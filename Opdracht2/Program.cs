@@ -33,23 +33,27 @@ class Program
 
         // Try creating the array.
         if (gamma > 1)
-        {
             levelReqs = new long[gamma];
-        }
         else
-        {
             levelReqs = new long[2];
-        }
+
         // Filling the array.
         levelReqs[0] = 0;
         levelReqs[1] = alfa;
+        ulong longCheck = long.MaxValue;
+
         for (long i = 2; i < levelReqs.LongLength; i++)
         {
             levelReqs[i] = levelReqs[i - 1] + levelReqs[i - 1] / beta;
+            if (levelReqs[i - 1] % 2 == 1)
+                levelReqs[i] += 1;
+            if ((ulong)levelReqs[i] > longCheck)
+                levelReqs[i] = long.MaxValue;
         }
 
         // Recieving Points.
         line = Console.ReadLine();
+
         while (line != null)
         {
             try
@@ -60,37 +64,39 @@ class Program
             }
             catch (Exception)
             {
-                Console.WriteLine("Oops");
             }
 
             line = Console.ReadLine();
         }
     }
-    // Binary Search
+
+    // Searching the library.
     private static long SearchInArray(long Points)
     {
         long Onder, Midden, Boven;
-        Boven = levelReqs.LongLength - 1;
+        Boven = levelReqs.LongLength;
         Midden = 0;
-        Onder = 0;
+        Onder = 1;
 
+        // Check if it is larger than the top of the array.
+        if (Points >= levelReqs[Boven - 1])
+            return Boven;
+
+        // Binary search within the array.
         while (Onder < Boven)
         {
             // Calculate the middle of the levels.
             Midden = (Boven + Onder) / 2;
 
-            // If we are right on the money, stop.
-            if (levelReqs[Midden] == Points)
-                return Midden + 1;
-            // We are too low, raise the bottom.
-            if (levelReqs[Midden] < Points)
-                Onder = Midden + 1;
             // We are too high, lower the top.
             if (levelReqs[Midden] > Points)
-                Boven = Midden + 1;
+                Boven = Midden;
+            // We must be too low, raise the bottom.
+            else
+                Onder = Midden + 1;
         }
 
-        return Midden + 1;
+        return Onder;
     }
 }
 
