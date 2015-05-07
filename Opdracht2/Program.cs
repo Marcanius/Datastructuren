@@ -11,10 +11,6 @@ class Program
 
     static void Main(string[] args)
     {
-        alfa = 0;
-        beta = 0;
-        gamma = 0;
-
         // Splitting the first line to get the alfa, beta and gamma.
         line = Console.ReadLine();
         lineSplit = line.Split(' ');
@@ -29,7 +25,13 @@ class Program
             // Gamma: The maximum level.
             gamma = long.Parse(lineSplit[2]);
         }
-        catch (Exception) { ; }
+        // If we can't parse, set everything to the default values of 0.
+        catch (Exception)
+        {
+            alfa = 0;
+            beta = 0;
+            gamma = 0;
+        }
 
         // Try creating the array.
         if (gamma > 1)
@@ -37,23 +39,25 @@ class Program
         else
             levelReqs = new long[2];
 
-        // Filling the array.
+        // Filling first two values of the array.
         levelReqs[0] = 0;
         levelReqs[1] = alfa;
-        ulong longCheck = long.MaxValue;
 
+        // Filling in the rest of the array.
         for (long i = 2; i < levelReqs.LongLength; i++)
         {
-            levelReqs[i] = levelReqs[i - 1] + levelReqs[i - 1] / beta;
-            if (levelReqs[i - 1] % 2 == 1)
-                levelReqs[i] += 1;
-            if ((ulong)levelReqs[i] > longCheck)
+            double nextValue = (double)levelReqs[i - 1] + (double)levelReqs[i - 1] / (double)beta;
+            levelReqs[i] = (long)Math.Ceiling(nextValue);
+
+            // We don't want the values in the array to become negative if they are larger than the size of a long.
+            if ((ulong)levelReqs[i] > long.MaxValue)
                 levelReqs[i] = long.MaxValue;
         }
 
-        // Recieving Points.
+        // Recieving Input.
         line = Console.ReadLine();
 
+        // Calculating Output.
         while (line != null)
         {
             try
@@ -62,24 +66,22 @@ class Program
                 long result = SearchInArray(points);
                 Console.WriteLine(result);
             }
-            catch (Exception)
-            {
-            }
+            catch (Exception) { break; }
 
+            //Recieving next Input.
             line = Console.ReadLine();
         }
     }
 
     // Searching the library.
-    private static long SearchInArray(long Points)
+    private static long SearchInArray(long Input)
     {
         long Onder, Midden, Boven;
         Boven = levelReqs.LongLength;
-        Midden = 0;
-        Onder = 1;
+        Onder = 0;
 
-        // Check if it is larger than the top of the array.
-        if (Points >= levelReqs[Boven - 1])
+        // Check if it is larger than the highest value in the array; if so, return that highest value.
+        if (Input >= levelReqs[Boven - 1])
             return Boven;
 
         // Binary search within the array.
@@ -88,10 +90,10 @@ class Program
             // Calculate the middle of the levels.
             Midden = (Boven + Onder) / 2;
 
-            // We are too high, lower the top.
-            if (levelReqs[Midden] > Points)
+            // If we are too high, lower the top.
+            if (levelReqs[Midden] > Input)
                 Boven = Midden;
-            // We must be too low, raise the bottom.
+            // Otherwise we must be too low, raise the bottom.
             else
                 Onder = Midden + 1;
         }
