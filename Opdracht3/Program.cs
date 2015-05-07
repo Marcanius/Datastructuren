@@ -5,12 +5,10 @@
 
 class Program
 {
-    int[,] Input, Output;
+    static ArrayNumber[] Input, Output;
 
     static void Main(string[] args)
     {
-        
-        ArrayNumber[] Input, Output;
 
         // Creating the unsorted array.
         int size = int.Parse(Console.ReadLine());
@@ -27,25 +25,38 @@ class Program
         }
 
         // Sorting the array.
+        if (size <= 20)
+        {
 
+        }
     }
 
-    public int[,] RndmQuickSort()
+    public ArrayNumber[] RndmQuickSort(ArrayNumber[] Input)
     {
+        ArrayNumber[] Output = new ArrayNumber[Input.Length];
+
+        // Select a random 
+
+        // Partition it.
+
         return Output;
     }
 
-    public int[,] InsertionSort()
+    public ArrayNumber[] InsertionSort(ArrayNumber[] Input)
     {
-        int[,] result = new int[1, 1];
+        ArrayNumber[] Output = new ArrayNumber[Input.Length];
 
+        // Sort it.
 
         return Output;
     }
-
-
 }
 
+// 
+/// <summary>
+/// A struct containing a pair of two integers.
+/// It also contains the fraction of these two numbers, so we don't have to keep calculating it.
+/// </summary>
 struct ArrayNumber
 {
     public readonly int Teller;
