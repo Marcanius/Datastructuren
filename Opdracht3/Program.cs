@@ -45,12 +45,13 @@ class Program
     /// <returns> The new position of the pivot. </returns>
     public static int Partition(IntPair[] A, int start, int stop)
     {
-        // Determine a random pivot.
-        int pivot = Random.Next(start, stop + 1);
         // Buffer for switching elements.
         IntPair temp;
         // The position of the first element larger than the pivot.
         int i = start - 1;
+
+        // Determine a random pivot.
+        int pivot = Random.Next(start, stop + 1);
 
         // Switch pivot and the last element in the range.
         temp = A[pivot];
@@ -150,13 +151,13 @@ struct IntPair
 {
     public readonly int Teller;
     public readonly int Noemer;
-    public readonly float Breuk;
+    public readonly double Breuk;
 
     public IntPair(int teller, int noemer)
     {
         Teller = teller;
         Noemer = noemer;
 
-        Breuk = (float)teller / (float)noemer;
+        Breuk = (double)teller / (double)noemer;
     }
 }
