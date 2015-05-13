@@ -51,67 +51,59 @@ class Program
         int i = start - 1;
 
         // Determine a random pivot.
-        int pivot = Random.Next(start, stop + 1);
+        int pivot = Random.Next(start, stop);
 
         // Switch pivot and the last element in the range.
         temp = A[pivot];
         A[pivot] = A[stop];
         A[stop] = temp;
+        pivot = stop;
 
         // Compare each element to the pivot.
         for (int j = start; j < stop; j++)
         {
             // If the element is smaller than the pivot, switch it with the first element larger than the pivot.
-            if (A[j].Breuk < A[pivot].Breuk)
+            if (A[j].Breuk < A[pivot].Breuk || A[j].Breuk == A[pivot].Breuk && A[j].Teller <= A[pivot].Teller)
             {
                 // Increase i by 1 and Switch A[i] and A[j].
-                temp = A[i++];
+                i++;
+                temp = A[i];
                 A[i] = A[j];
                 A[j] = temp;
             }
-
-            // If they are equal, compare the numerator, and switch accordingly.
-            else if (A[j].Breuk == A[i].Breuk)
-                if (A[j].Teller <= A[i].Teller)
-                {
-                    // Increase i by 1 and Switch A[i] and A[j].
-                    temp = A[i++];
-                    A[i] = A[j];
-                    A[j] = temp;
-                }
         }
 
         // Switch the pivot and the first element larger than the pivot.
-        temp = A[i++];
-        A[i] = A[pivot];
+        temp = A[i+1];
+        A[i+1] = A[pivot];
         A[pivot] = temp;
 
         // Return the position of the pivot.
-        return i;
+        return i+1;
     }
 
-    public static void RndmQuickSort(IntPair[] Input, int start, int stop)
+    public static void RndmQuickSort(IntPair[] A, int start, int stop)
     {
         int pivot = 0;
 
         if (start < stop)
         {
             // Create a pivot by partitioning.
-            pivot = Partition(Input, start, stop);
+            pivot = Partition(A, start, stop);
 
             // If the resulting first partition is larger than 20 elements, QuickSort them.
             if ((pivot - 1) - start > 20)
-                RndmQuickSort(Input, start, pivot - 1);
+                RndmQuickSort(A, start, pivot - 1);
             // Otherwise, InsertionSort them.
             else
-                InsertionSort(Input, start, pivot - 1);
+                InsertionSort(A, start, pivot - 1);
 
             // If the resulting second partition is larger than 20 elements, QuickSort them.
             if (stop - (pivot + 1) > 20)
-                RndmQuickSort(Input, pivot + 1, stop);
+                RndmQuickSort(A, pivot + 1, stop);
             // Otherwise, InsertionSort them.
             else
-                InsertionSort(Input, pivot + 1, stop);
+                InsertionSort(A, pivot + 1, stop);
         }
     }
 
@@ -120,23 +112,26 @@ class Program
         IntPair temp;
         int i;
 
-        for (int j = start + 1; j <= stop; j++)
+        if (start < stop)
         {
-            temp = A[j];
-
-            // Place A[j] in the correct place in the array.
-            i = j - 1;
-            // Check if the previous element has a larger fraction, or, if the fractions are equal, a larger denominator than the current key.
-            while (i >= start && (A[i].Breuk > temp.Breuk || (A[i].Breuk == temp.Breuk && A[i].Teller > temp.Teller)))
+            for (int j = start + 1; j <= stop; j++)
             {
-                // Move the prevoious element up.
-                A[i + 1] = A[i];
-                // Decrease the element we are checking.
-                i--;
-            }
+                temp = A[j];
 
-            // Place the key at the correct place.
-            A[i + 1] = temp;
+                // Place A[j] in the correct place in the array.
+                i = j - 1;
+                // Check if the previous element has a larger fraction, or, if the fractions are equal, a larger denominator than the current key.
+                while (i > start - 1 && (A[i].Breuk > temp.Breuk || (A[i].Breuk == temp.Breuk && A[i].Teller > temp.Teller)))
+                {
+                    // Move the previous element up.
+                    A[i + 1] = A[i];
+                    // Decrease the element we are checking.
+                    i--;
+                }
+
+                // Place the key at the correct place.
+                A[i+1] = temp;
+            }
         }
         return;
     }
