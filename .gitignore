@@ -1,5 +1,3 @@
 bin
 obj
 *.cache
-*.suo
-*.user
