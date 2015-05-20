@@ -9,7 +9,6 @@ class Program
     public static long p, q, s, m, x;
     public static long i, previous, current, currentBucket;
     public static long[] array;
-    public static bool zeroTaken = false;
 
     static void Main(string[] args)
     {
@@ -22,6 +21,10 @@ class Program
 
         // Creating the array of buckets.
         array = new long[(long)Math.Ceiling((double)m / (double)x)];
+
+        // Setting the default values.
+        for (long j = 0; j < array.LongLength; j++)
+            array[j] = -1;
 
         // Setting the first value.
         array[s / x] = s;
@@ -39,57 +42,20 @@ class Program
 
             if (currentBucket < 2 || currentBucket > array.LongLength - 3)
             {
-                // Current / x is in the first bucket.
+                // First bucket.
                 if (currentBucket == 0)
                 {
-                    // If the current bucket has already been filled, we stop, since two values in the same bucket cannot differ more than x from one another.
-                    if (zeroTaken || array[currentBucket] != 0)
+
+                    // Check the bucket, and the adjacent ones.
+                    if (
+                        CheckBucket(0, current) ||
+                        CheckBucket(1, current) ||
+                        CheckBucketAlt(array.LongLength - 1, current) ||
+                        CheckBucketAlt(array.LongLength - 2, current)
+                        )
                         break;
 
-                    // If the bucket has not been filled, check the adjacent buckets.
-                    else
-                    {
-                        // If we are actually looking at zero, we need to record that, since 0 is the default value of the array. 
-                        if (current == 0)
-                            zeroTaken = true;
-
-                        // Check the adjacent buckets.
-                        // The last bucket.
-                        if (array[array.LongLength - 1] != 0)
-                            if (Math.Abs(current - array[array.LongLength - 1]) >= m - x)
-                                break;
-
-                        // The second to last bucket.
-                        if (array[array.LongLength - 2] != 0)
-                            if (Math.Abs(current - array[array.LongLength - 2]) >= m - x)
-                                break;
-
-                        // The second bucket.
-                        if (CheckNextBucket(currentBucket, current))
-                            break;
-
-                        // It does not differ at most x from any previously calculated value; write it to its bucket.
-                        array[currentBucket] = current;
-                        continue;
-                    }
-                }
-
-                // Current / x is in the second bucket.
-                else if (currentBucket == 1)
-                {
-                    // Check if there has already been a value in the current bucket.
-                    if (array[1] != 0)
-                        break;
-
-                    // Check the adjacent buckets.
-                    // The first bucket.
-                    if (array[0] != 0 || zeroTaken)
-                        if (Math.Abs(current - array[0]) <= x)
-                            break;
-                    // The third bucket.
-                    if (CheckNextBucket(currentBucket, current))
-                        break;
-
+                    // It does not differ at most x from any previously calculated value; write it to its bucket.
                     array[currentBucket] = current;
                     continue;
                 }
@@ -97,50 +63,27 @@ class Program
                 // Second to last bucket.
                 else if (currentBucket == array.LongLength - 2)
                 {
-                    if (array[currentBucket] != 0)
+                    if (
+                        CheckBucket(currentBucket, current) ||
+                        CheckBucket(currentBucket + 1, current) ||
+                        CheckBucketAlt(0, current) ||
+                        CheckBucket(currentBucket - 1, current)
+                        )
                         break;
-
-                    // Check the adjacent buckets.
-                    // The third from last bucket.
-                    if (CheckPrevBucket(currentBucket, current))
-                        break;
-
-                    // The last bucket.
-                    if (CheckNextBucket(currentBucket, current))
-                        break;
-
-                    // The first bucket.
-                    if (zeroTaken || array[0] != 0)
-                        if (Math.Abs(current - array[0]) >= m - x)
-                            break;
 
                     array[currentBucket] = current;
                     continue;
                 }
 
-                // Current / x is in the last bucket.
+                // Last bucket.
                 else if (currentBucket == array.LongLength - 1)
                 {
                     // If the bucket is already taken, we stop, since two values in the same bucket can not differ more than x from one another.
-                    if (array[currentBucket] != 0)
-                        break;
-
-                    // Check the adjacent buckets.
-                    // The second from last bucket.
-                    if (CheckPrevBucket(currentBucket, current))
-                        break;
-
-                    // The third from last bucket.
-                    if (CheckPrevBucket(currentBucket - 1, current))
-                        break;
-
-                    // The first bucket.
-                    if (array[0] != 0 || zeroTaken)
-                        if (Math.Abs(current - array[0]) >= m - x)
-                            break;
-
-                    // The second bucket.
-                    if (CheckNextBucket(0, current))
+                    if (
+                        CheckBucket(currentBucket, current) ||
+                        CheckBucketAlt(0, current) ||
+                        CheckBucket(currentBucket - 1, current)
+                        )
                         break;
 
                     array[currentBucket] = current;
@@ -153,13 +96,12 @@ class Program
             else
             {
                 // The regular testing of the buckets:
-                // Check if the bucket of current is empty.
-                // If it is not, its contents cannot differ more than x from an element in the same bucket, and we have our result.
-                if (array[currentBucket] != 0)
-                    break;
-
-                // Check the adjacent buckets.
-                if (CheckNextBucket(currentBucket, current) || CheckPrevBucket(currentBucket, current))
+                // Check if the current bucket is empty, then check the adjacent buckets as well.
+                if (
+                    CheckBucket(currentBucket, current) ||
+                    CheckBucket(currentBucket + 1, current) ||
+                    CheckBucket(currentBucket - 1, current)
+                    )
                     break;
 
                 // It does not differ at most x from any previously calculated value; write current to its bucket.
@@ -172,16 +114,28 @@ class Program
         Console.WriteLine(i);
     }
 
-    static bool CheckNextBucket(long Bucket, long Value)
+    /// <summary>
+    /// We check if the bucket specified already contains a value, and if so, we check if it differs at most x from the given value.
+    /// </summary>
+    /// <param name="Bucket"> The bucket to check. </param>
+    /// <param name="Value"> The value to check against. </param>
+    /// <returns> true if we can not write to the bucket, and stop our loop, false if we can write to our bucket, and continue the loop. </returns>
+    static bool CheckBucket(long Bucket, long Value)
     {
-        if (array[Bucket + 1] != 0 && Math.Abs(Value - array[Bucket + 1]) <= x)
+        if (array[Bucket] != -1 && Math.Abs(Value - array[Bucket]) <= x)
             return true;
         return false;
     }
 
-    static bool CheckPrevBucket(long Bucket, long Value)
+    /// <summary>
+    /// An alternate version of CheckBucket(), which is used by the last and first bucket, to check across the 0 line.
+    /// </summary>
+    /// <param name="Bucket"></param>
+    /// <param name="Value"></param>
+    /// <returns></returns>
+    static bool CheckBucketAlt(long Bucket, long Value)
     {
-        if (array[Bucket - 1] != 0 && Math.Abs(Value - array[Bucket - 1]) <= x)
+        if (array[Bucket] != -1 && Math.Abs(Value - array[Bucket]) >= m - x)
             return true;
         return false;
     }
