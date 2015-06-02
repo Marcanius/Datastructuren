@@ -6,32 +6,85 @@ using System.IO;
 
 public class Program
 {
-    // Which customer stood in line for the printer the longest
+    // The temporary input queue, the 'outside' of the store.
+    static Klant[] Outside;
+    // The first available spot in the outside array;
+    static long OutsideAvailable;
+    static Random random;
+
+    // Which customer stood in line for the printer the longest.
     string resultOne;
-    // Which customer stood in line for Piet the longest
+    // Which customer stood in line for Piet the longest.
     string resultTwo;
-    // Which customer just would not leave the store
+    // Which customer just would not leave the store.
     string resultThree;
-    // When could Piet leave
+    // When could Piet leave.
     string resultFour;
 
     static void Main(string[] args)
     {
-        // Recieve first input
-        // Start loop
-        // Loop through the timeline until we reached the next customer
-        // Recieve next input
-        // Repeat loop until input == sluit
+        // Setup the temporary queue for customers, Outside.
+        Outside = new Klant[2100000];
+        OutsideAvailable = 0;
+        random = new Random();
+
+        // Recieve all input, and parse to the tempQueue.
+        string input = Console.ReadLine();
+        while (input != "sluit")
+        {
+            string[] InputSplit = input.Split(' ');
+            InputKlant(long.Parse(InputSplit[0]), long.Parse(InputSplit[1]), long.Parse(InputSplit[2]));
+        }
+
+        // Sort the temp queue.
+        RandomizedQuicksort(Outside, 0, OutsideAvailable);
+
+
+        // Start looping through the timeline, doing the stuff.
+        //      The stuff:
+        //      - Customer enters the correct Queue.
+        //      - If a printer is done, add it to Piet's stack, and calculate the customer's waiting time: Result 1.
+        //      - If a printer is done, start on the next customer.
+        //      - If Piet is done, The customer picks up his plate, and calculate the customer's waiting time: Result 2 & 3.
+        //      - If Piet is done, He picks up the next plate from the stack.
+        // Repeat loop until the queues and piet's stack are empty: Result 4.
 
         // return the results
     }
 
-    void InputKlant(int t, int p, int s)
+    static void InputKlant(long t, long p, long s)
     {
         // Create a customer.
         Klant klant = new Klant(t, p, s);
-        // Add to the correct queue.
+        // Add to the temp queue.
+        Outside[OutsideAvailable] = klant;
+        // Self-Explanatory.
+        OutsideAvailable++;
+    }
 
+    static long RandomizedPartition(Klant[] A, long p, long r)
+    {
+        // Determine a random pivot.
+        long pivot = random.Next((int)p, (int)r);
+        // Switch the pivot and the last element of the range.
+        Klant temp = A[r];
+        A[r] = A[pivot];
+        A[pivot] = temp;
+        
+        // 
+
+        return pivot;
+    }
+
+    static void RandomizedQuicksort(Klant[] A, long p, long r)
+    {
+        if (p < r)
+        {
+            long pivot = RandomizedPartition(A, p, r);
+
+            RandomizedQuicksort(A, p, pivot - 1);
+            RandomizedQuicksort(A, pivot + 1, r);
+        }
     }
 }
 
@@ -88,12 +141,20 @@ public struct Piet
 
 public struct Klant
 {
-    int t, p, s;
+    long t, p, s;
 
-    public Klant(int T, int P, int S)
+    public Klant(long T, long P, long S)
     {
         this.t = T;
         this.p = P;
         this.s = S;
     }
 }
+
+/* while input != sluit
+        while tijd < input.Parse.Split.1
+            Doe dingen    
+        input
+ 
+    Werk door totdat alle queues en piet's bak leeg zijn.
+ */
