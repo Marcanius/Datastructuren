@@ -7,10 +7,19 @@ using System.IO;
 public class Program
 {
     // The temporary input queue, the 'outside' of the store.
-    static Klant[] Outside;
+    static Outside Outside;
     // The first available spot in the outside array;
     static long OutsideAvailable;
     static Random random;
+
+    // The Queues and Stack.
+    static Printer printerA, printerB, printerC;
+    static Piet piet;
+
+    // Indicates whether all queues and stacks are empty, so we can stop looping through the timeline.
+    static bool QueuesNotEmpty;
+    // Where we are in the timeline.
+    static long TimeStep;
 
     // Which customer stood in line for the printer the longest.
     string resultOne;
@@ -24,21 +33,33 @@ public class Program
     static void Main(string[] args)
     {
         // Setup the temporary queue for customers, Outside.
-        Outside = new Klant[2100000];
+        Outside = new Outside();
         OutsideAvailable = 0;
         random = new Random();
-
+        
         // Recieve all input, and parse to the tempQueue.
         string input = Console.ReadLine();
         while (input != "sluit")
         {
             string[] InputSplit = input.Split(' ');
-            InputKlant(long.Parse(InputSplit[0]), long.Parse(InputSplit[1]), long.Parse(InputSplit[2]));
+            // Add a new customer to the temp queue.
+            Outside.Add
+            (
+                new Klant
+                (
+                    long.Parse(InputSplit[0]), 
+                    long.Parse(InputSplit[1]), 
+                    long.Parse(InputSplit[2])
+                )
+            );
         }
 
         // Sort the temp queue.
-        RandomizedQuicksort(Outside, 0, OutsideAvailable);
+        Outside.Sort();
 
+        // Setup the timeline.
+        QueuesNotEmpty = false;
+        TimeStep = Outside.CheckNext.T;
 
         // Start looping through the timeline, doing the stuff.
         //      The stuff:
@@ -48,55 +69,186 @@ public class Program
         //      - If Piet is done, The customer picks up his plate, and calculate the customer's waiting time: Result 2 & 3.
         //      - If Piet is done, He picks up the next plate from the stack.
         // Repeat loop until the queues and piet's stack are empty: Result 4.
+        while (QueuesNotEmpty && TimeStep <= 2100000000)
+        {
+            // Stuff one: Enter a customer, if their T == the timeStep.
+            Klant Next = Outside.CheckNext;
+            if (Next.T == TimeStep)
+                EnterIntoPrinter(Outside.ReturnDeQueue());
+
+            // Stuff Two and Three: Check if a printer is done.
+            printerA.Update(TimeStep);
+            printerB.Update(TimeStep);
+            printerC.Update(TimeStep);
+
+            // Stuff Four and Five: Check if Piet is done.
+            piet.Update(TimeStep);
+
+            // End of this timeStep, go to the next timeStep.
+            TimeStep++;
+        }
 
         // return the results
     }
 
-    static void InputKlant(long t, long p, long s)
+    static void EnterIntoPrinter(Klant k)
     {
-        // Create a customer.
-        Klant klant = new Klant(t, p, s);
-        // Add to the temp queue.
-        Outside[OutsideAvailable] = klant;
-        // Self-Explanatory.
-        OutsideAvailable++;
-    }
-
-    static long RandomizedPartition(Klant[] A, long p, long r)
-    {
-        // Determine a random pivot.
-        long pivot = random.Next((int)p, (int)r);
-        // Switch the pivot and the last element of the range.
-        Klant temp = A[r];
-        A[r] = A[pivot];
-        A[pivot] = temp;
-        
-        // 
-
-        return pivot;
-    }
-
-    static void RandomizedQuicksort(Klant[] A, long p, long r)
-    {
-        if (p < r)
+        // Search for the shortest Printer Queue, and add the customer to its queue.
+        // A is shorter than or equal to B, we will never chose B
+        if (printerA.Length <= printerB)
         {
-            long pivot = RandomizedPartition(A, p, r);
-
-            RandomizedQuicksort(A, p, pivot - 1);
-            RandomizedQuicksort(A, pivot + 1, r);
+            // A is the shortest, or shared shortest, we use A.
+            if (printerA.Length <= printerC.Length)
+            {
+                // Add it to A's queue.
+                // TODO
+            }
+            // C is the shortest, we use C
+            else
+            {
+                // Add it to C's queue.
+                // TODO
+            }
         }
+        // B is shorter than A, we will never use A
+        else
+        {
+            // B is shorter than or equal to C, we use B.
+            if (printerB.Length <= printerC.Length)
+            {
+                // Add it to B's queue.
+                // TODO
+            }
+                // C is the shortest, we use C.
+            else
+            {
+                // Add it to C's queue.
+                // TODO
+            }
+        }
+    }
+}
+
+public struct Outside
+{
+    Klant[] Queue;
+    // The first element, inclusive, and the last element, exclusive.
+    long First, Last;
+
+    public Outside()
+    {
+        Queue = new Klant[2100000];
+        First = 1;
+        Last = 1;
+    }
+
+    public void Add(Klant k)
+    {
+        Queue[Last] = k;
+        Last++;
+    }
+
+    public void Sort()
+    {
+        Klant Temp;
+
+        // Check every customer from the second to the last.
+        for (long j = 1; j < Last; j++)
+        {
+            long i = j;
+            while (i > 0 && Queue[i - 1].T > Queue[i].T)
+            {
+                // Switch A[i] and A[i-1].
+                Temp = Queue[i - 1];
+                Queue[i - 1] = Queue[i];
+                Queue[i] = Temp;
+
+                // Lower i, so we check the next/previous value.
+                i--;
+            }
+        }
+    }
+
+    // Enters a customer into the store, but don't return it.
+    public void DeQueue()
+    {
+        First++;
+    }
+
+    // Enters a customer into the store, and return the customer.
+    public Klant ReturnDeQueue()
+    {
+        First++;
+        return Queue[First - 1];
+    }
+
+    // Checks the next customer waiting to go inside.
+    public Klant CheckNext
+    {
+        get { return Queue[First]; }
+    }
+
+    // Checks how many persons there are outside.
+    public long Length
+    {
+        get { return Last - First; }
     }
 }
 
 public struct Printer
 {
     Klant[] Queue;
+    // The current
+    long First, Last;
+    Piet piet;
+    long WhenDone;
+    bool busy;
 
-    public Printer()
+    public Printer(Piet Piet)
     {
         Queue = new Klant[700000];
+        First = 0;
+        Last = 0;
+        WhenDone = -1;
+        piet = Piet;
+        busy = false;
     }
 
+    public void Update(long TimeStep)
+    {
+        // Check if we are busy right now.
+        if (busy)
+        {
+
+        }
+        // If we are not busy, check if the queue is empty.
+        else
+        {
+            // If a customer is waiting, start on the customer
+            if (this.Length > 1)
+            {
+                busy = true;
+                WhenDone = TimeStep + 
+            }
+        }
+
+        // If we are done, add the current customer to piet's stack, and start on the next customer.
+        if (WhenDone == TimeStep || Last == First)
+        {
+            // Add the customer to piet's stack.
+            piet.Add(Queue[First]);
+
+            // Pick the next Customer.
+            First++;
+            WhenDone += Queue[First].P;
+        }
+    }
+
+    public void EnQueue(Klant k)
+    {
+        Queue[Last] = k;
+        Last++;
+    }
 }
 
 public struct Piet
@@ -141,13 +293,13 @@ public struct Piet
 
 public struct Klant
 {
-    long t, p, s;
+    public long T, P, S;
 
     public Klant(long T, long P, long S)
     {
-        this.t = T;
-        this.p = P;
-        this.s = S;
+        this.T = T;
+        this.P = P;
+        this.S = S;
     }
 }
 
