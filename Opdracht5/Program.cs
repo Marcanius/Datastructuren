@@ -16,8 +16,6 @@ public class Program
     static Printer printerA, printerB, printerC;
     static Piet piet;
 
-    // Indicates whether all queues and stacks are empty, so we can stop looping through the timeline.
-    static bool QueuesNotEmpty;
     // Where we are in the timeline.
     static long TimeStep;
 
@@ -62,9 +60,12 @@ public class Program
         // Sort the temp queue.
         Outside.Sort();
 
-        // Setup the timeline.
-        QueuesNotEmpty = false;
-        TimeStep = Outside.CheckNext.T;
+        // Set the CustomerIds, based on their order of entry.
+        for (long i = 0; i < 700000; i++)
+            Outside.Klant()
+
+            // Setup the timeline.
+            TimeStep = Outside.CheckNext.T;
 
         // Start looping through the timeline, doing the stuff.
         //      The stuff:
@@ -74,13 +75,15 @@ public class Program
         //      - If Piet is done, The customer picks up his plate, and calculate the customer's waiting time: Result 2 & 3.
         //      - If Piet is done, He picks up the next plate from the stack.
         // Repeat loop until the queues and piet's stack are empty: Result 4.
-        while (QueuesNotEmpty && TimeStep <= 2100000000)
+        while (QueuesNotEmpty && TimeStep <= 2099999999)
         {
             // Stuff one: Enter a customer, if their T == the timeStep.
-            Klant Next = Outside.CheckNext;
-            if (Next.T == TimeStep)
-                EnterIntoPrinter(Outside.ReturnDeQueue());
-
+            if (Outside.Length > 0)
+            {
+                Klant Next = Outside.CheckNext;
+                if (Next.T == TimeStep)
+                    EnterIntoPrinter(Outside.ReturnDeQueue());
+            }
             // Stuff Two and Three: Check if a printer is done.
             printerA.Update(TimeStep);
             printerB.Update(TimeStep);
@@ -106,13 +109,13 @@ public class Program
             if (printerA.Length <= printerC.Length)
             {
                 // Add it to A's queue.
-                // TODO
+                printerA.EnQueue(k);
             }
             // C is the shortest, we use C
             else
             {
                 // Add it to C's queue.
-                // TODO
+                printerC.EnQueue(k);
             }
         }
         // B is shorter than A, we will never use A
@@ -122,15 +125,21 @@ public class Program
             if (printerB.Length <= printerC.Length)
             {
                 // Add it to B's queue.
-                // TODO
+                printerB.EnQueue(k);
             }
             // C is the shortest, we use C.
             else
             {
                 // Add it to C's queue.
-                // TODO
+                printerC.EnQueue(k);
             }
         }
+    }
+
+    // Indicates whether all queues and stacks are empty, so we can stop looping through the timeline.
+    static bool QueuesNotEmpty
+    {
+        get { return (printerA.Length + printerB.Length + printerC.Length + piet.Length + Outside.Length) > 0; }
     }
 }
 
@@ -203,7 +212,7 @@ public struct Outside
 public struct Printer
 {
     Klant[] Queue;
-    // The current
+    // The current/previous customer, and the last customer waiting in line.
     long First, Last;
     Piet piet;
     long WhenDone;
@@ -225,72 +234,106 @@ public struct Printer
         // If we have been doing nothing the last update, check if there is a customer in our queue.
         if (!busy)
         {
-            NextCustomer(false);
+            NextCustomer();
         }
-        // If we finished printing this update, check if there is a customer in our queue, and start on them
+        // If we finished printing this update, send the current customer to Piet. Then start on the next one, if the queue is not empty.
         else if (WhenDone == TimeStep)
         {
-            NextCustomer(true);
+            // Send the current customer to Piet.
+            piet.Add(Queue[First]);
+
+            // Start on the next customer.
+            NextCustomer();
         }
     }
 
     public void EnQueue(Klant k)
     {
         Queue[Last] = k;
-        Last++;
+        Last = (Last + 1) % 700000;
     }
 
-    private void NextCustomer(bool JustDone)
+    private void NextCustomer()
     {
-        // If we
-        if (JustDone)
-            First++;
+        // If there are customers waiting, go to the next one, and see if they have been waiting in line longer than the current recordholder.
         if (this.Length > 0)
         {
+            First = (First + 1) % 700000;
             WhenDone += Queue[First].P;
             busy = true;
         }
+        // If there are no customers waiting, go into idle mode.
         else
             busy = false;
     }
 
     public long Length
     {
-        get { return Last - First; }
+        get
+        {
+            // If the queue does not extend past the end of the array.
+            if (Last >= First)
+                return Last - First;
+            // If the queue extends past the end of the array.
+            else
+                return Queue.LongLength - (First - Last);
+        }
     }
 }
 
 public struct Piet
 {
+    // The stack of customers waiting.
     Klant[] Stack;
-    // The topmost element, inclusive.
+    // The topmost element of the stack, inclusive.
     long top;
+    // Whether we are printing or not.
+    bool busy;
+    // The timestep we finish with our current work.
+    long WhenDone;
 
     public Piet()
     {
         Stack = new Klant[700000];
         // For an empty stack, the top element will be 0, and will always be an empty customer.
-        top = 0;
+        top = -1;
+        WhenDone = -1;
+        busy = false;
     }
 
-    public Klant Pop()
+    public void Update(long TimeStep)
     {
-        if (top > 0)
+        // If we have not been doing anything the last update, check if there is a customer, and start on them.
+        if (!busy)
         {
-            top--;
-            return Stack[top + 1];
+            // Start on the next customer.
+            NextCustomer();
         }
-        else
-            return new Klant(0, 0, 0);
+        // If we just finished our work, calculate the result for the customer.
+        if (WhenDone == TimeStep)
+            // Calculate the result for the customer we just finished on.
+            // TODO
+            // Start on the next customer.
+            NextCustomer();
     }
 
-    public void Pop()
+    // Check is there is a customer waiting on the stack.
+    void NextCustomer()
     {
-        if (top > 0)
+        // If there are customers on the stack, start on them.
+        if (top >= 0)
+        {
+            WhenDone += Stack[top].S;
             top--;
+            busy = true;
+        }
+        // If there are no customers on the stack, go into idle mode.
+        else
+            busy = false;
     }
 
-    public void Push(Klant k)
+    // Adds a customer to the stack.
+    public void Add(Klant k)
     {
         if (top < 700000)
         {
@@ -298,24 +341,23 @@ public struct Piet
             Stack[top] = k;
         }
     }
+
+    public long Length
+    {
+        get { return top + 1; }
+    }
 }
 
 public struct Klant
 {
-    public long T, P, S;
+    public readonly long T, P, S;
+    public long CustNo;
 
     public Klant(long T, long P, long S)
     {
         this.T = T;
         this.P = P;
         this.S = S;
+        CustNo = -1;
     }
 }
-
-/* while input != sluit
-        while tijd < input.Parse.Split.1
-            Doe dingen    
-        input
- 
-    Werk door totdat alle queues en piet's bak leeg zijn.
- */
