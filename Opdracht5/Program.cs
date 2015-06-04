@@ -60,12 +60,8 @@ public class Program
         // Sort the temp queue.
         Outside.Sort();
 
-        // Set the CustomerIds, based on their order of entry.
-        for (long i = 0; i < 700000; i++)
-            Outside.Klant()
-
-            // Setup the timeline.
-            TimeStep = Outside.CheckNext.T;
+        // Setup the timeline.
+        TimeStep = Outside.CheckNext.T;
 
         // Start looping through the timeline, doing the stuff.
         //      The stuff:
@@ -75,7 +71,7 @@ public class Program
         //      - If Piet is done, The customer picks up his plate, and calculate the customer's waiting time: Result 2 & 3.
         //      - If Piet is done, He picks up the next plate from the stack.
         // Repeat loop until the queues and piet's stack are empty: Result 4.
-        while (QueuesNotEmpty && TimeStep <= 2099999999)
+        while (QueuesNotEmpty && TimeStep < 2100000000)
         {
             // Stuff one: Enter a customer, if their T == the timeStep.
             if (Outside.Length > 0)
@@ -139,7 +135,15 @@ public class Program
     // Indicates whether all queues and stacks are empty, so we can stop looping through the timeline.
     static bool QueuesNotEmpty
     {
-        get { return (printerA.Length + printerB.Length + printerC.Length + piet.Length + Outside.Length) > 0; }
+        get
+        {
+            // If there are still customers outside, we can never be done.
+            if (Outside.Length > 0)
+                return false;
+                // If there are no more customers outside, check if there are still customers inside.
+            else
+                return (printerA.Length + printerB.Length + printerC.Length + piet.Length) > 0;
+        }
     }
 }
 
@@ -147,13 +151,13 @@ public struct Outside
 {
     Klant[] Queue;
     // The first element, inclusive, and the last element, exclusive.
-    long First, Last;
+    long Next, Last;
 
     public Outside()
     {
         Queue = new Klant[2100000];
-        First = 1;
-        Last = 1;
+        Next = 0;
+        Last = 0;
     }
 
     public void Add(Klant k)
@@ -162,6 +166,7 @@ public struct Outside
         Last++;
     }
 
+    // Sorts the customers in order of the time they enter the store, then it assigns them their Customer Number.
     public void Sort()
     {
         Klant Temp;
@@ -181,31 +186,33 @@ public struct Outside
                 i--;
             }
         }
+        for (long i = 0; i < Last; i++)
+            Queue[i].CustNo = i;
     }
 
     // Enters a customer into the store, but don't return it.
     public void DeQueue()
     {
-        First++;
+        Next++;
     }
 
     // Enters a customer into the store, and return the customer.
     public Klant ReturnDeQueue()
     {
-        First++;
-        return Queue[First - 1];
+        Next++;
+        return Queue[Next - 1];
     }
 
     // Checks the next customer waiting to go inside.
     public Klant CheckNext
     {
-        get { return Queue[First]; }
+        get { return Queue[Next]; }
     }
 
     // Checks how many persons there are outside.
     public long Length
     {
-        get { return Last - First; }
+        get { return Last - Next; }
     }
 }
 
@@ -342,6 +349,7 @@ public struct Piet
         }
     }
 
+    // Returns the number of items in the stack.
     public long Length
     {
         get { return top + 1; }
