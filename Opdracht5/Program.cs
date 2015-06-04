@@ -36,7 +36,12 @@ public class Program
         Outside = new Outside();
         OutsideAvailable = 0;
         random = new Random();
-        
+
+        piet = new Piet();
+        printerA = new Printer(piet);
+        printerB = new Printer(piet);
+        printerC = new Printer(piet);
+
         // Recieve all input, and parse to the tempQueue.
         string input = Console.ReadLine();
         while (input != "sluit")
@@ -47,8 +52,8 @@ public class Program
             (
                 new Klant
                 (
-                    long.Parse(InputSplit[0]), 
-                    long.Parse(InputSplit[1]), 
+                    long.Parse(InputSplit[0]),
+                    long.Parse(InputSplit[1]),
                     long.Parse(InputSplit[2])
                 )
             );
@@ -95,7 +100,7 @@ public class Program
     {
         // Search for the shortest Printer Queue, and add the customer to its queue.
         // A is shorter than or equal to B, we will never chose B
-        if (printerA.Length <= printerB)
+        if (printerA.Length <= printerB.Length)
         {
             // A is the shortest, or shared shortest, we use A.
             if (printerA.Length <= printerC.Length)
@@ -119,7 +124,7 @@ public class Program
                 // Add it to B's queue.
                 // TODO
             }
-                // C is the shortest, we use C.
+            // C is the shortest, we use C.
             else
             {
                 // Add it to C's queue.
@@ -216,31 +221,16 @@ public struct Printer
 
     public void Update(long TimeStep)
     {
-        // Check if we are busy right now.
-        if (busy)
+        // Check if we need to start on the next customer right now.
+        // If we have been doing nothing the last update, check if there is a customer in our queue.
+        if (!busy)
         {
-
+            NextCustomer(false);
         }
-        // If we are not busy, check if the queue is empty.
-        else
+        // If we finished printing this update, check if there is a customer in our queue, and start on them
+        else if (WhenDone == TimeStep)
         {
-            // If a customer is waiting, start on the customer
-            if (this.Length > 1)
-            {
-                busy = true;
-                WhenDone = TimeStep + 
-            }
-        }
-
-        // If we are done, add the current customer to piet's stack, and start on the next customer.
-        if (WhenDone == TimeStep || Last == First)
-        {
-            // Add the customer to piet's stack.
-            piet.Add(Queue[First]);
-
-            // Pick the next Customer.
-            First++;
-            WhenDone += Queue[First].P;
+            NextCustomer(true);
         }
     }
 
@@ -248,6 +238,25 @@ public struct Printer
     {
         Queue[Last] = k;
         Last++;
+    }
+
+    private void NextCustomer(bool JustDone)
+    {
+        // If we
+        if (JustDone)
+            First++;
+        if (this.Length > 0)
+        {
+            WhenDone += Queue[First].P;
+            busy = true;
+        }
+        else
+            busy = false;
+    }
+
+    public long Length
+    {
+        get { return Last - First; }
     }
 }
 
