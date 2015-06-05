@@ -16,15 +16,6 @@ public class Program
     // Where we are in the timeline.
     static long TimeStep;
 
-    // Which customer stood in line for the printer the longest.
-    KlantRecord resultOne;
-    // Which customer stood in line for Piet the longest.
-    string resultTwo;
-    // Which customer just would not leave the store.
-    string resultThree;
-    // When could Piet leave.
-    string resultFour;
-
     static void Main(string[] args)
     {
         // Setup the temporary queue for customers, Outside.
@@ -32,15 +23,23 @@ public class Program
 
         // Setup piet's stack and the printers' queues.
         piet = new Piet();
-        printerA = new Printer(piet);
-        printerB = new Printer(piet);
-        printerC = new Printer(piet);
+        printerA = new Printer('A', piet);
+        printerB = new Printer('B', piet);
+        printerC = new Printer('C', piet);
 
         // Recieve all input, and parse to the tempQueue.
         string input = Console.ReadLine();
-        string[] InputSplit;
+        string[] InputSplit = input.Split(' ');
+        // The customer number, for the results.
+        long i = 0;
+
+        // Where we start the simulation; when the first customer enters the store.
+        TimeStep = long.Parse(InputSplit[0]);
+
+        // Start setting up all the customers.
         while (input != "sluit")
         {
+            i++;
             // Split the input into it's parts.
             InputSplit = input.Split(' ');
 
@@ -49,6 +48,7 @@ public class Program
             (
                 new Klant
                 (
+                    i,
                     long.Parse(InputSplit[0]),
                     long.Parse(InputSplit[1]),
                     long.Parse(InputSplit[2])
@@ -58,12 +58,6 @@ public class Program
             // Read the next line of input.
             input = Console.ReadLine();
         }
-
-        // Sort the temp queue.
-        Outside.Sort();
-
-        // Setup the timeline.
-        TimeStep = Outside.CheckNext.T;
 
         // Start looping through the timeline, doing the stuff.
         //      The stuff:
@@ -76,28 +70,37 @@ public class Program
         while (QueuesNotEmpty && TimeStep < 2100000000)
         {
             // Stuff one: Enter a customer, if their T == the timeStep.
-            if (Outside.Length > 0)
+            if (Outside.Length > 0 && Outside.CheckNext(TimeStep))
             {
-                Klant Next = Outside.CheckNext;
-                if (Next.T == TimeStep)
-                    EnterIntoPrinter(Outside.ReturnDeQueue());
+                EnterIntoPrinter(Outside.ReturnDeQueue());
             }
-            // Stuff Two and Three: Check if a printer is done.
+
+            // Stuff Two and Three: Check if a printer is done or idle.
             printerA.Update(TimeStep);
             printerB.Update(TimeStep);
             printerC.Update(TimeStep);
 
-            // Stuff Four and Five: Check if Piet is done.
+            // Stuff Four and Five: Check if Piet is done or idle.
             piet.Update(TimeStep);
 
             // End of this timeStep, go to the next timeStep.
             TimeStep++;
         }
 
-        // return the results
+        // Return the results
         // Result one: The customer who has been waiting the longest to print.
         CalculateResultOne();
+        // Result two: The customer who has been waiting the longest at piets desk.
+        piet.resultTwo.Print();
+        // Result three: The customer who has spent the most time in the store.
+        piet.resultThree.Print();
+        // Result four: When Piet could go home.
+        Console.WriteLine("sluitingstijd: " + TimeStep);
 
+
+        #region DEBUG
+        Console.ReadLine();
+        #endregion
     }
 
     static void EnterIntoPrinter(Klant k)
@@ -144,24 +147,24 @@ public class Program
     static void CalculateResultOne()
     {
         // A is larger than, or equal to B, we will never choose B.
-        if (printerA.currentRecord.WaitTime >= printerB.currentRecord.WaitTime)
+        if (printerA.resultOne.WaitTime >= printerB.resultOne.WaitTime)
         {
             // A is (shared) largest, we use A.
-            if (printerA.currentRecord.WaitTime >= printerC.currentRecord.WaitTime)
-                Console.WriteLine(printerA.currentRecord.CustNo + ": " + printerA.currentRecord.WaitTime);
+            if (printerA.resultOne.WaitTime >= printerC.resultOne.WaitTime)
+                printerA.resultOne.Print();
             // C is the largest, we use C.
             else
-                Console.WriteLine(printerC.currentRecord.CustNo + ": " + printerC.currentRecord.WaitTime);
+                printerC.resultOne.Print();
         }
         // B is larger than A, we will never use A.
         else
         {
             // B is (shared) shortest, we use B.
-            if (printerB.currentRecord.WaitTime >= printerC.currentRecord.WaitTime)
-                Console.WriteLine(printerB.currentRecord.CustNo + ": " + printerB.currentRecord.WaitTime);
+            if (printerB.resultOne.WaitTime >= printerC.resultOne.WaitTime)
+                printerB.resultOne.Print();
             // C is the largest, we use C.
             else
-                Console.WriteLine(printerC.currentRecord.CustNo + ": " + printerC.currentRecord.WaitTime);
+                printerC.resultOne.Print();
         }
     }
 
@@ -201,36 +204,6 @@ public class Outside
         Last++;
     }
 
-    // Sorts the customers in order of the time they enter the store, then it assigns them their Customer Number.
-    public void Sort()
-    {
-        Klant Temp;
-
-        // Check every customer from the second to the last.
-        for (long j = 1; j < Last; j++)
-        {
-            long i = j;
-            while (i > 0 && Queue[i - 1].T > Queue[i].T)
-            {
-                // Switch A[i] and A[i-1].
-                Temp = Queue[i - 1];
-                Queue[i - 1] = Queue[i];
-                Queue[i] = Temp;
-
-                // Lower i, so we check the next/previous value.
-                i--;
-            }
-        }
-        for (long i = 0; i < Last; i++)
-            Queue[i].CustNo = i + 1;
-    }
-
-    // Enters a customer into the store, but does not return it.
-    public void DeQueue()
-    {
-        Next++;
-    }
-
     // Enters a customer into the store, and returns the customer.
     public Klant ReturnDeQueue()
     {
@@ -238,10 +211,10 @@ public class Outside
         return Queue[Next - 1];
     }
 
-    // Checks the next customer waiting to go inside.
-    public Klant CheckNext
+    // Checks if the next customer will enter this timestep.
+    public bool CheckNext(long TimeStep)
     {
-        get { return Queue[Next]; }
+        return Queue[Next].T == TimeStep;
     }
 
     // Checks how many persons there are outside.
@@ -253,6 +226,7 @@ public class Outside
 
 public class Printer
 {
+    char id;
     // The queue of customers waiting to print.
     Klant[] Queue;
     // The current/previous customer, and the last customer waiting in line.
@@ -263,20 +237,19 @@ public class Printer
     Piet piet;
     // The TimeStep when the printer is done with it's current print.
     long WhenDone;
-    // Whether the printer is printing right now.
-    bool busy;
     // The customer who has been waiting the longest in line for the printer.
-    public KlantRecord currentRecord;
+    public KlantRecord resultOne;
 
-    public Printer(Piet Piet)
+    public Printer(char Id, Piet Piet)
     {
-        Queue = new Klant[700000];
-        currentJob = -1;
-        nextJob = 0;
-        firstNull = 0;
-        WhenDone = -1;
-        piet = Piet;
-        currentRecord = new KlantRecord(-1, -1);
+        this.id = Id;
+        this.Queue = new Klant[700000];
+        this.currentJob = -1;
+        this.nextJob = 0;
+        this.firstNull = 0;
+        this.WhenDone = -1;
+        this.piet = Piet;
+        this.resultOne = new KlantRecord();
     }
 
     public void Update(long TimeStep)
@@ -285,24 +258,27 @@ public class Printer
         if (WhenDone == TimeStep)
         {
             // Record part of the answer to query 2.
-            // TODO
+            currentCustomer.PrintDone = TimeStep;
             // Send the job to Piet.
             piet.Add(currentCustomer);
             // Set ourselves to idle.
             currentJob = -1;
         }
-        // If we are not printing right now, check if we can start on the next customer.
+        // If we are not printing right now, start on the next job if it is available.
         if (currentJob == -1 && nextJob != firstNull)
         {
             // Setup the current job
             currentJob = nextJob;
 
             // Record the result of the first query.
-            if ((TimeStep - currentCustomer.T) > currentRecord.WaitTime)
-                currentRecord = new KlantRecord(currentCustomer.CustNo, TimeStep - currentCustomer.T);
+            if ((TimeStep - currentCustomer.T) > resultOne.WaitTime)
+            {
+                resultOne.CustNo = currentCustomer.CustNo;
+                resultOne.WaitTime = TimeStep - currentCustomer.T;
+            }
 
             // Record when we will be done.
-            WhenDone = TimeStep + Queue[currentJob].P;
+            WhenDone = TimeStep + currentCustomer.P;
 
             // Setup the next job.
             nextJob = (nextJob + 1) % 700000;
@@ -345,81 +321,87 @@ public class Piet
 {
     // The stack of customers waiting.
     Klant[] Stack;
-    // The topmost element of the stack, inclusive.
-    long top;
-    // Whether we are printing or not.
-    bool busy;
+    // The first element of the stack that is null; not a customer waiting for his plate.
+    long firstNull;
     // The timestep we finish with our current work.
     long WhenDone;
+    // The customer for whom we are currently cutting a plate.
+    Klant currentKlant;
+    // The customer who has been waiting on Piet the longest;
+    public KlantRecord resultTwo;
+    // The customer who has spent the most time in the store.
+    public KlantRecord resultThree;
+
 
     public Piet()
     {
         Stack = new Klant[700000];
-        // For an empty stack, the top element will be 0, and will always be an empty customer.
-        top = -1;
+        firstNull = 0;
         WhenDone = -1;
-        busy = false;
+        resultTwo = new KlantRecord();
+        resultThree = new KlantRecord();
     }
 
     public void Update(long TimeStep)
     {
-        // If we have not been doing anything the last update, check if there is a customer, and start on them.
-        if (!busy)
+        // If we just finished our work, calculate the result for the customer, and send the customer away.
+        if (WhenDone == TimeStep)
         {
-            // Start on the next customer.
-            NextCustomer(TimeStep);
-        }
-        // If we just finished our work, calculate the result for the customer.
-        else if (WhenDone == TimeStep)
-            // Calculate the result for the customer we just finished on.
-            // TODO
-            // Start on the next customer.
-            NextCustomer(TimeStep);
-    }
+            // Calculate the results for the customer we just finished on.
+            if (TimeStep - currentKlant.PrintDone > resultTwo.WaitTime)
+            {
+                resultTwo.CustNo = currentKlant.CustNo;
+                resultTwo.WaitTime = TimeStep - currentKlant.PrintDone;
+            }
+            if (TimeStep - currentKlant.T > resultThree.WaitTime)
+            {
+                resultThree.CustNo = currentKlant.CustNo;
+                resultThree.WaitTime = TimeStep - currentKlant.T;
+            }
 
-    // Check is there is a customer waiting on the stack.
-    void NextCustomer(long TimeStep)
-    {
-        // If there are customers on the stack, start on them.
-        if (top >= 0)
-        {
-            WhenDone = TimeStep + Stack[top].S;
-            top--;
-            busy = true;
+            currentKlant = null;
         }
-        // If there are no customers on the stack, go into idle mode.
-        else
-            busy = false;
+        // If we are not cutting right now, check if there are plates waiting, and start on them.
+        if (currentKlant == null && firstNull > 0)
+        {
+            currentKlant = Stack[firstNull - 1];
+            WhenDone = TimeStep + currentKlant.S;
+            firstNull--;
+        }
     }
 
     // Adds a customer to the stack.
     public void Add(Klant k)
     {
-        if (top < 700000)
-        {
-            top++;
-            Stack[top] = k;
-        }
+        Stack[firstNull] = k;
+        firstNull++;
     }
 
     // Returns the number of items in the stack.
     public long Length
     {
-        get { return top + 1; }
+        get
+        {
+            if (currentKlant != null)
+                return firstNull + 1;
+            else
+                return firstNull;
+        }
     }
 }
 
 public class Klant
 {
-    public readonly long T, P, S;
-    public long CustNo;
+    public readonly long CustNo, T, P, S;
+    public long PrintDone;
 
-    public Klant(long T, long P, long S)
+    public Klant(long CustNo, long T, long P, long S)
     {
         this.T = T;
         this.P = P;
         this.S = S;
-        CustNo = -1;
+        this.CustNo = CustNo;
+        this.PrintDone = -1;
     }
 }
 
@@ -428,9 +410,14 @@ public class KlantRecord
     public long CustNo;
     public long WaitTime;
 
-    public KlantRecord(long CustNo, long WaitTime)
+    public KlantRecord(long CustNo = -1, long WaitTime = -1)
     {
         this.CustNo = CustNo;
         this.WaitTime = WaitTime;
+    }
+
+    public void Print()
+    {
+        Console.WriteLine(CustNo + ": " + WaitTime);
     }
 }
