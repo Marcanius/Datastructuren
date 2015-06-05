@@ -8,9 +8,6 @@ public class Program
 {
     // The temporary input queue, the 'outside' of the store.
     static Outside Outside;
-    // The first available spot in the outside array;
-    static long OutsideAvailable;
-    static Random random;
 
     // The Queues and Stack.
     static Printer printerA, printerB, printerC;
@@ -32,9 +29,8 @@ public class Program
     {
         // Setup the temporary queue for customers, Outside.
         Outside = new Outside();
-        OutsideAvailable = 0;
-        random = new Random();
 
+        // Setup the printer queues and piet's stack.
         piet = new Piet();
         printerA = new Printer(piet);
         printerB = new Printer(piet);
@@ -42,9 +38,12 @@ public class Program
 
         // Recieve all input, and parse to the tempQueue.
         string input = Console.ReadLine();
+        string[] InputSplit;
         while (input != "sluit")
         {
-            string[] InputSplit = input.Split(' ');
+            // Split the input into its necessary parts.
+            InputSplit = input.Split(' ');
+
             // Add a new customer to the temp queue.
             Outside.Add
             (
@@ -55,9 +54,12 @@ public class Program
                     long.Parse(InputSplit[2])
                 )
             );
+
+            // Recieve the next input.
+            input = Console.ReadLine();
         }
 
-        // Sort the temp queue.
+        // Sort the temp queue, in case the input was not given in order of the customer's entry times.
         Outside.Sort();
 
         // Setup the timeline.
@@ -95,40 +97,32 @@ public class Program
         // return the results
     }
 
+    // Search for the shortest Printer Queue, and add the customer to its queue.
     static void EnterIntoPrinter(Klant k)
     {
-        // Search for the shortest Printer Queue, and add the customer to its queue.
         // A is shorter than or equal to B, we will never chose B
         if (printerA.Length <= printerB.Length)
         {
-            // A is the shortest, or shared shortest, we use A.
+            // A has the (shared) shortest line, we use A.
             if (printerA.Length <= printerC.Length)
-            {
                 // Add it to A's queue.
                 printerA.EnQueue(k);
-            }
-            // C is the shortest, we use C
+            // C has the shortest line, we use C.
             else
-            {
                 // Add it to C's queue.
                 printerC.EnQueue(k);
-            }
         }
         // B is shorter than A, we will never use A
         else
         {
-            // B is shorter than or equal to C, we use B.
+            // B has the (shared) shortest line, we use B.
             if (printerB.Length <= printerC.Length)
-            {
                 // Add it to B's queue.
                 printerB.EnQueue(k);
-            }
-            // C is the shortest, we use C.
+            // C has the shortest line, we use C.
             else
-            {
                 // Add it to C's queue.
                 printerC.EnQueue(k);
-            }
         }
     }
 
@@ -140,9 +134,9 @@ public class Program
             // If there are still customers outside, we can never be done.
             if (Outside.Length > 0)
                 return false;
-                // If there are no more customers outside, check if there are still customers inside.
+            // If there are no more customers outside, check if there are still customers inside.
             else
-                return (printerA.Length + printerB.Length + printerC.Length + piet.Length) > 0;
+                return ((printerA.Length + printerB.Length + printerC.Length + piet.Length) > 0);
         }
     }
 }
@@ -187,7 +181,7 @@ public struct Outside
             }
         }
         for (long i = 0; i < Last; i++)
-            Queue[i].CustNo = i;
+            Queue[i].CustNo = i + 1;
     }
 
     // Enters a customer into the store, but don't return it.
@@ -224,15 +218,22 @@ public struct Printer
     Piet piet;
     long WhenDone;
     bool busy;
+    KlantRecord currentRecord;
 
     public Printer(Piet Piet)
     {
         Queue = new Klant[700000];
         First = 0;
         Last = 0;
-        WhenDone = -1;
-        piet = Piet;
+
         busy = false;
+        WhenDone = -1;
+
+        // The instance of piet's stack, so we can add to it.
+        piet = Piet;
+
+        // The record of the customer who has been waiting the longest.
+        currentRecord = new KlantRecord(0, -1);
     }
 
     public void Update(long TimeStep)
@@ -241,7 +242,7 @@ public struct Printer
         // If we have been doing nothing the last update, check if there is a customer in our queue.
         if (!busy)
         {
-            NextCustomer();
+            NextCustomer(TimeStep);
         }
         // If we finished printing this update, send the current customer to Piet. Then start on the next one, if the queue is not empty.
         else if (WhenDone == TimeStep)
@@ -250,30 +251,41 @@ public struct Printer
             piet.Add(Queue[First]);
 
             // Start on the next customer.
-            NextCustomer();
+            NextCustomer(TimeStep);
         }
     }
 
+    // Adds a customer to the queue.
     public void EnQueue(Klant k)
     {
         Queue[Last] = k;
         Last = (Last + 1) % 700000;
     }
 
-    private void NextCustomer()
+    // Starts on the next customer in the line, if there is one.
+    private void NextCustomer(long TimeStep)
     {
-        // If there are customers waiting, go to the next one, and see if they have been waiting in line longer than the current recordholder.
+        // If there are customers waiting.
         if (this.Length > 0)
         {
             First = (First + 1) % 700000;
-            WhenDone += Queue[First].P;
+
+            // Check the time they have been waiting in line, if that is more than the current record, record it.
+            Klant nextKlant = Queue[First];
+            if (TimeStep - nextKlant.T > currentRecord.Time)
+                currentRecord = new KlantRecord(nextKlant.CustNo, TimeStep - nextKlant.T);
+
+            // Start on the next customer.
+            WhenDone += nextKlant.P;
             busy = true;
         }
+
         // If there are no customers waiting, go into idle mode.
         else
             busy = false;
     }
 
+    // Returns the number of customers waiting in line.
     public long Length
     {
         get
@@ -310,18 +322,13 @@ public struct Piet
 
     public void Update(long TimeStep)
     {
-        // If we have not been doing anything the last update, check if there is a customer, and start on them.
-        if (!busy)
+        // If we have not been doing anything the last update, or we just finished our work, 
+        // check if there is a customer, and start on them.
+        if (!busy || WhenDone == TimeStep)
         {
             // Start on the next customer.
             NextCustomer();
         }
-        // If we just finished our work, calculate the result for the customer.
-        if (WhenDone == TimeStep)
-            // Calculate the result for the customer we just finished on.
-            // TODO
-            // Start on the next customer.
-            NextCustomer();
     }
 
     // Check is there is a customer waiting on the stack.
@@ -367,5 +374,17 @@ public struct Klant
         this.P = P;
         this.S = S;
         CustNo = -1;
+    }
+}
+
+public struct KlantRecord
+{
+    public long CustNo;
+    public long Time;
+
+    public KlantRecord(long CustNo, long Time)
+    {
+        this.CustNo = CustNo;
+        this.Time = Time;
     }
 }
