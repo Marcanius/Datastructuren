@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Opdracht4", "Opdracht4\Opdr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Opdracht5", "Opdracht5\Opdracht5.csproj", "{B19023EF-EC13-4DEA-B717-9DBD35CA7AA1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Opdracht6", "Opdracht6\Opdracht6.csproj", "{EBFC7BE9-5905-4329-BFF5-52655F318BC6}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -43,6 +45,10 @@ Global
 		{B19023EF-EC13-4DEA-B717-9DBD35CA7AA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B19023EF-EC13-4DEA-B717-9DBD35CA7AA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B19023EF-EC13-4DEA-B717-9DBD35CA7AA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBFC7BE9-5905-4329-BFF5-52655F318BC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBFC7BE9-5905-4329-BFF5-52655F318BC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBFC7BE9-5905-4329-BFF5-52655F318BC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBFC7BE9-5905-4329-BFF5-52655F318BC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
