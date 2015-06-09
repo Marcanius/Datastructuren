@@ -86,7 +86,7 @@ class Program
 
 class Speler
 {
-    public Speler previous, next;
+    public Speler Previous, Next;
     public readonly string name;
     public uint score;
 
@@ -94,6 +94,8 @@ class Speler
     {
         this.name = Name;
         this.score = Score;
-        this.previous = Previous;
+        this.Previous = Previous;
+        if (Previous != null)
+            this.Previous.Next = this;
     }
 }
