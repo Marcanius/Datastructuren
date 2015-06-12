@@ -59,8 +59,12 @@ class Program
 
 class Speler
 {
-    int PlayerNumber;
-    int Booms;
+    public readonly int PlayerNumber;
+    public int Booms;
+
+    // Tree
+    public Speler Parent;
+    public Speler Left, Right;
 
     public Speler(int PlayerNumber, int Booms)
     {
@@ -69,7 +73,88 @@ class Speler
     }
 }
 
-class Tree
+class TreeNode
 {
+    public TreeNode Parent, Left, Right;
+    public readonly Speler Player;
+    public int Depth;
 
+    public TreeNode(Speler Speler, TreeNode Parent = null)
+    {
+        this.Player = Speler;
+    }
+
+    // Gets the maximum number of steps from this node to the bottom of the tree.
+    public int Height
+    {
+        get
+        {
+            if (this.Left != null)
+                if (this.Right != null)
+                    return Math.Max(Left.Height, Right.Height) + 1;
+                else
+                    return Left.Height + 1;
+            else
+                if (this.Right != null)
+                    return Right.Height + 1;
+                else
+                    return 1;
+        }
+    }
+
+    public TreeNode Predecessor
+    {
+        get
+        {
+            // If the successor is under the node, go left once, then keep going right until we have reached the bottom.
+            if (this.Left != null)
+            {
+                TreeNode result = this.Left;
+                while (result != null && result.Right != null)
+                    result = result.Right;
+                return result;
+            }
+                // If the successor is above the node, go up the tree, until we are no longer the left child
+            else
+            {
+                TreeNode current = this;
+                TreeNode parent = current.Parent;
+                while (parent != null && current == parent.Left)
+                {
+                    current = parent;
+                    parent = current.Parent;
+                }
+                return parent;
+            }
+        }
+    }
+
+
+    // Gets the first node that is bigger than the current. 
+    public TreeNode Successor
+    {
+        get
+        {
+            // If the successor is under the node, go right once, and then keep going left until we have reached the bottom.
+            if (this.Right != null)
+            {
+                TreeNode result = this.Right;
+                while (result != null && result.Left != null)
+                    result = result.Left;
+                return result;
+            }
+            // If the successor is above the node, go up the tree, until we are no longer a right child.
+            else
+            {
+                TreeNode current = this;
+                TreeNode parent = current.Parent;
+                while (parent != null && current == parent.Right)
+                {
+                    current = parent;
+                    parent = current.Parent;
+                }
+                return parent;
+            }
+        }
+    }
 }
