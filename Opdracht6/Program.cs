@@ -4,6 +4,11 @@ using System.IO;
 // Naam: Matthijs Platenburg
 // Studentnummer: 4260953
 
+// Soort Hashing: Ik neem het kwadraat van elke character in the input.
+// Vervolgens vermenigvuldig ik dat kwadraat met de plaats van de char binnen de string, zodat permutaties van dezelfde letters niet dezelfde hash krijgen.
+// Voor de uiteindelijke hash neem ik de modulo 33343 van de som van alle kwadraatproducten. 
+// 33343 is het dichtsbijzijnde priemgetal boven 33333, een leuk getal lijkt me.
+
 class Program
 {
     static Speler[] Table;
@@ -103,7 +108,7 @@ class Program
                     current = current.Next;
 
                 // Create a new link in the chain.
-                Speler temp = new Speler(Name, current);
+                current.Next = new Speler(Name, current);
             }
 
             // If there is no player in that chain, add a new player at the start.
