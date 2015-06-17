@@ -15,6 +15,7 @@ class Program
     {
         // Setup.
         lookup = new TreeNode[1000000];
+        Tree = new Tree();
 
         string input;
         string[] inputSplit;
@@ -57,7 +58,7 @@ class Program
             Tree.Root = newPlayer;
         // This is not the first player.
         else
-            Tree.Root.Add(newPlayer);
+            Tree.Root.TryToAdd(newPlayer);
     }
 
     static void PrintRange(int PlayerNumber)
@@ -67,6 +68,7 @@ class Program
 
         // Add the current player to the table.
         Result[i] = lookup[PlayerNumber];
+
         // Get the players with a smaller score.
         while (Result[i] != null && i > 0)
         {
@@ -83,17 +85,16 @@ class Program
         }
 
         // Print the table.
-
         for (int j = 9; j >= 0; j--)
         {
             if (Result[j] != null)
-                Console.WriteLine();
+                Console.WriteLine(Result[j]._PlayerNumber);
         }
     }
 
     static void PlayerRank(int PlayerNumber)
     {
-
+        Console.WriteLine(lookup[PlayerNumber].StartRank);
     }
 }
 
@@ -106,39 +107,36 @@ class TreeNode
 {
     public Tree tree;
     public TreeNode Parent, Left, Right;
-    public int Depth, Height;
-    public readonly int PlayerNumber;
-    public int Booms;
+    public readonly int _PlayerNumber;
+    public int Height, Size, _Booms;
 
     public TreeNode(int PlayerNumber, int Booms, Tree Tree)
     {
         this.tree = Tree;
-        this.PlayerNumber = PlayerNumber;
-        this.Booms = Booms;
+        this._PlayerNumber = PlayerNumber;
+        this._Booms = Booms;
         this.Height = 1;
+        this.Size = 1;
     }
 
-    public void Add(TreeNode ToAdd)
+    #region Adding
+
+    public void TryToAdd(TreeNode ToAdd)
     {
+        this.Size++;
+
         // If the key is smaller than the current player.
-        if (ToAdd.Booms < this.Booms)
+        if (ToAdd._Booms < this._Booms)
             // if there are still smaller players
             if (this.Left != null)
             {
-                this.Left.Add(ToAdd);
+                this.Left.TryToAdd(ToAdd);
                 return;
             }
             // If there are no more smaller players.
             else
             {
-                this.Left = ToAdd;
-                ToAdd.Parent = this;
-                if (this.Height < 2)
-                {
-                    this.Height = 2;
-                }
-                Balance();
-                
+                this.Add(ToAdd);
                 return;
             }
 
@@ -147,19 +145,44 @@ class TreeNode
             // If there are still larger players.
             if (this.Right != null)
             {
-                this.Right.Add(ToAdd);
+                this.Right.TryToAdd(ToAdd);
                 return;
             }
             // There are no more larger players.
             else
             {
-                this.Right = ToAdd;
-                ToAdd.Parent = this;
-                if (this.Height < 2)
-                    this.Height = 2;
-                Balance();
+                this.Add(ToAdd);
                 return;
             }
+    }
+
+    private void Add(TreeNode ToAdd)
+    {
+        // Add the node to the correct side
+        ToAdd.Parent = this;
+        if (ToAdd._Booms < this._Booms)
+            this.Left = ToAdd;
+        else
+            this.Right = ToAdd;
+
+        TreeNode current = this;
+        bool done = false;
+        int preHeight;
+        while (!done)
+        {
+            // Set the height from before any rotating.
+            preHeight = current.Height;
+            // Calculate a new height for our current node.
+            current.CalculateHeight();
+            // if current is out of balance.
+            if (current.IsLeftHeavy || current.IsRightHeavy)
+                current.Balance();
+            // y.height was unchanged, and y was in balance.
+            else if (current.Height == preHeight || current == tree.Root)
+                done = true;
+            else
+                current = current.Parent;
+        }
     }
 
     public void Balance()
@@ -182,10 +205,6 @@ class TreeNode
             {
                 LeftRotation(this);
             }
-
-            // Our balance has changed, so we have to balance our parent as well, unless we are the root.
-            if (this.Parent != null)
-                this.Parent.Balance();
         }
         // If current is left heavy.
         else if (this.IsLeftHeavy)
@@ -205,83 +224,155 @@ class TreeNode
             {
                 RightRotation(this);
             }
-
-            // Our balance has changed, so we have to balance our parent as well, unless we are the root.
-            if (this.Parent != null)
-                this.Parent.Balance();
         }
-
-        // Our balance did not change, or we are already stopping, we stop.
-        return;
     }
 
     public void LeftRotation(TreeNode A)
     {
-        // Situation: A \ B \ C.
+        // Situation: A \ B.
         TreeNode B = A.Right;
-        
+
+        // B takes A's parent as his own.
+        B.Parent = A.Parent;
+
+        if (A.Parent == null)
+            tree.Root = B;
+        else if (A.Parent.Left == A)
+            A.Parent.Left = B;
+        else
+            A.Parent.Right = B;
+
+        // A takes B's left child as it's right child.
+        A.Right = B.Left;
+        if (B.Left != null)
+            B.Left.Parent = A;
+
+        // B takes A as it's left child.
+        B.Left = A;
+        A.Parent = B;
+
+        // Recalculate the heights of A and B.
+        A.CalculateHeight();
+        B.CalculateHeight();
+
+        // Recalculate the sizes of A and B.
+        B.Size = A.Size;
+        if (A.Left != null)
+            if (A.Right != null)
+                A.Size = A.Left.Size + A.Right.Size + 1;
+            else
+                A.Size = A.Left.Size + 1;
+        else
+            if (A.Right != null)
+                A.Size = A.Right.Size + 1;
+            else
+                A.Size = 1;
+    }
+
+    public void RightRotation(TreeNode A)
+    {
+        // Situation: B / A.
+        TreeNode B = A.Left;
+
         // B becomes the new root.
         B.Parent = A.Parent;
 
         if (A.Parent == null)
             tree.Root = B;
+        else if (A.Parent.Left == A)
+            A.Parent.Left = B;
+        else
+            A.Parent.Right = B;
 
-        // A takes B's left child as it's right child.
-        A.Right = B.Left;
- 
-        // B takes A as it's left child.
-        B.Left = A;
+        // A takes B's right child as it's left child.
+        A.Left = B.Right;
+        if (B.Right != null)
+            B.Right.Parent = B;
+
+        // B takes A as it's right child.
+        B.Right = A;
+        A.Parent = B;
+
+        // Recalculate the heights of B and A.
+        B.CalculateHeight();
+        A.CalculateHeight();
+
+        // Recalculate the sizes of A and B.
+        B.Size = A.Size;
+        if (A.Left != null)
+            if (A.Right != null)
+                A.Size = A.Left.Size + A.Right.Size + 1;
+            else
+                A.Size = A.Left.Size + 1;
+        else
+            if (A.Right != null)
+                A.Size = A.Right.Size + 1;
+            else
+                A.Size = 1;
     }
 
-    public void RightRotation(TreeNode C)
+    // Calculates a new height for this node, based on our subtrees.
+    public void CalculateHeight()
     {
-        // Situation: C / B / A.
-        TreeNode B = C.Left;
-
-        // B becomes the new root.
-        B.Parent = C.Parent;
-
-        if (C.Parent == null)
-            tree.Root = B;
-
-        // C takes B's right child as it's left child.
-        C.Left = B.Right;
-
-        // B takes C s it's right child.
-        B.Right = C;
+        if (this.Left != null)
+            if (this.Right != null)
+                this.Height = Math.Max(Left.Height, Right.Height) + 1;
+            else
+                this.Height = Left.Height + 1;
+        else
+            if (this.Right != null)
+                this.Height = Right.Height + 1;
+            else
+                this.Height = 1;
     }
 
-    // Gets the maximum number of steps from this node to the bottom of the tree.
-    //public int Height
-    //{
-    //    get
-    //    {
-    //        if (this.Left != null)
-    //            if (this.Right != null)
-    //                return Math.Max(Left.Height, Right.Height) + 1;
-    //            else
-    //                return Left.Height + 1;
-    //        else
-    //            if (this.Right != null)
-    //                return Right.Height + 1;
-    //            else
-    //                return 1;
-    //    }
-    //}
-
-    // Gets the parent's other child.
-    public TreeNode Sibling
+    // If the difference in height between our children is more than one, we are heavy on one side.
+    public bool IsLeftHeavy
     {
         get
         {
-            if (this.Parent == null)
-                return null;
-            if (this == this.Parent.Left)
-                return this.Parent.Right;
-            else
-                return this.Parent.Left;
+            // If there is a left child.
+            if (this.Left != null)
+                // If there is no right child, it's height is 1.
+                if (this.Right == null && this.Left.Height > 1)
+                    return true;
+                // If there is a right child, but the difference is more than 1.
+                else if (this.Right != null && this.Left.Height - this.Right.Height > 1)
+                    return true;
+
+            // We are either in balance, or we are right heavy.
+            return false;
         }
     }
+
+    // If the difference in height between our children is more than one, we are heavy on one side.
+    public bool IsRightHeavy
+    {
+        get
+        {
+            // If there is a right child.
+            if (this.Right != null)
+                // If there is no left child, it's height is 1, so we check if our height is more than that.
+                if (this.Left == null)
+                    if (this.Right.Height > 1)
+                        return true;
+                    else
+                        return false;
+                // If there is a left child, and the difference between them is more than 1.
+                else
+                    if (this.Right.Height - this.Left.Height > 1)
+                        return true;
+                    else
+                        return false;
+            else
+                // We are either in balance, or we are left heavy.
+                return false;
+        }
+    }
+
+    #endregion
+
+    #region Range
 
     // Gets the  first node that is larger than this one.
     public TreeNode Predecessor
@@ -340,37 +431,61 @@ class TreeNode
         }
     }
 
-    public bool IsLeftHeavy
+    #endregion
+
+    #region Rank
+
+    public int StartRank
     {
         get
         {
-            // If there is a left child.
-            if (this.Left != null)
-                // If there is no right child.
-                if (this.Right == null)
-                    return true;
-                // If there is a right child, but it is smaller than our left child
-                else if (this.Right.Height < this.Left.Height)
-                    return true;
-            // We are either in balance, or we are right heavy.
-            return false;
+            int result = 1, toTest = this._Booms;
+            TreeNode successor;
+
+            if (this.Successor != null)
+            {
+                successor = this.Successor;
+
+                // Get your first successor that has a larger score than you.
+                while (successor._Booms == toTest)
+                {
+                    toTest = successor._Booms;
+                    successor = successor.Successor;
+                }
+                // Add 1 to the rank of your first true successor to get your score;
+                result += successor.Rank;
+            }
+
+            return result;
         }
     }
 
-    public bool IsRightHeavy
+    // Get the number of player with a higher score than this player.
+    public int Rank
     {
         get
         {
-            // If there is a right child.
+            int result = 1;
+            // Get all the players below you with a higher score.
             if (this.Right != null)
-                // If there is no left child/
-                if (this.Left == null)
-                    return true;
-                // If there is a left child, but it is smaller than our right child.
-                else if (this.Left.Height < this.Right.Height)
-                    return true;
-            // We are either in balance, or we are left heavy.
-            return false;
+                result = this.Right.Size + 1;
+
+            // Go up the tree, and keep adding players with a higher score than you.
+            TreeNode current = this;
+            while (current != null && current != tree.Root)
+            {
+                if (current == current.Parent.Left)
+                    if (current.Parent.Right != null)
+                        result += current.Parent.Right.Size + 1;
+                    else
+                        result++;
+                current = current.Parent;
+            }
+
+            // Return all the players with a higher score than you.
+            return result;
         }
     }
+
+    #endregion
 }
